@@ -1,8 +1,8 @@
-function tokenizer(input) {
+export function tokenizer(input) {
     let current = 0
     let tokens = []
     let nameReg = /[a-zA-Z0-9_]/
-    
+
     while(current < input.length) {
       let _char = input[current]
   
@@ -15,10 +15,10 @@ function tokenizer(input) {
         current++
         continue
       }
-      if(_char === '+') {
+      if(_char === ',') {
         tokens.push({
           type: 'comma',
-          value: '+'
+          value: ','
         })
         current++
         continue
@@ -39,8 +39,16 @@ function tokenizer(input) {
         current++
         continue
       }
+      if(_char === '+') {
+        tokens.push({
+          type: 'plus',
+          value: '+'
+        })
+        current++
+        continue
+      }
       //空白
-      if(/s/.test(_char)) {
+      if(/\s/.test(_char)) {
         tokens.push({
           type: 'blank',
           value: _char
@@ -52,27 +60,40 @@ function tokenizer(input) {
       if(nameReg.test(_char)) {
         let _str = _char
         let _start = current
-  
+
         while(nameReg.test(input[++_start])) {
           _str += input[_start]
         }
+
         // 匹配 function
         if(_str == 'function') {
           tokens.push({
-            type: 'function',
+            type: 'FunctionDeclaration',
             value: 'function'
           })
         }
+        // 匹配 return
+        if(_str === 'return') {
+          tokens.push({
+            type: 'return',
+            value: 'return'
+          })
+        }
         // 匹配 function name
-        if(tokens[tokens.length - 1].type === 'blank' && tokens[tokens.length - 2].type === 'function') {
+        if(tokens[tokens.length - 1].type === 'blank' && tokens[tokens.length - 2].type === 'FunctionDeclaration') {
           tokens.push({
             type: 'functionName',
             value: _str
           })
         }
-        // 匹配 参数名
-        //最后一个不匹配但已++，所以-1
-        current = _start - 1
+        // 匹配 变量名
+        if(['blank', 'paren', 'plus', 'bracket', 'comma'].includes(tokens[tokens.length - 1].type)) {
+          tokens.push({
+            type: 'variate',
+            value: _str
+          })      
+        }
+        current = _start
         continue
       }
       // 最后加个容灾
@@ -80,5 +101,14 @@ function tokenizer(input) {
         type: 'error',
         value: 'non-match'
       })
+      current++
     }
+    return tokens
 }
+
+let sourceCode = `
+function sum(a, b) {
+  return a + b
+}
+`
+console.log(JSON.stringify(tokenizer(sourceCode)))
