@@ -1,4 +1,4 @@
-export function tokenizer(input) {
+export default function tokenizer(input) {
     let current = 0
     let tokens = []
     let nameReg = /[a-zA-Z0-9_]/
@@ -75,7 +75,7 @@ export function tokenizer(input) {
         // 匹配 return
         if(_str === 'return') {
           tokens.push({
-            type: 'return',
+            type: 'ReturnExpressionStatement',
             value: 'return'
           })
         }
@@ -105,10 +105,3 @@ export function tokenizer(input) {
     }
     return tokens
 }
-
-let sourceCode = `
-function sum(a, b) {
-  return a + b
-}
-`
-console.log(JSON.stringify(tokenizer(sourceCode)))

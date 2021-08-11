@@ -8,6 +8,7 @@ function getBlockStatementList(list, currentIndex=0, endSymbol) {
             }
         }
     }
+    return {}
 }
 // 获取前一个非 空白 的token
 function getPreToken(list, currentIndex=0) {
@@ -28,9 +29,10 @@ function getNextToken(list, currentIndex=0) {
 // specific function params
 function getFunctionParams(list, currentIndex=0) {
     let root = []
+    let flag = false
 
     for(let i = currentIndex; i < list.length; i++) {
-        if(list[i].type === 'variate') {
+        if(list[i].type === 'variate' && flag) {
             root.push({
                 type: 'variate',
                 id: {
@@ -38,43 +40,59 @@ function getFunctionParams(list, currentIndex=0) {
                 }
             })
         }
-        if(list[i].type === 'paren') {
+        if(list[i].type === 'paren' && flag) {
             return root
+        }
+        if(list[i].type === 'paren') {
+            flag = true
         }
     }
 }
+// expressionstatement
+function getExpressionStatement(list) {
+    let root = []
+
+    for(let i = 0; i < list.length; i++) {
+        if(list[i].type === 'variate' || list[i].type === 'plus') {
+            root.push(list[i])
+        }
+    }
+
+    return root
+}
 // parse
-function parse(tree, startIndex=0) {
+export default function parse(tree, startIndex=0) {
     let root = []
     let treeLength = tree.length
 
     for(let i = startIndex; i < treeLength; i++) {
         // function
         if(tree[i].type === 'FunctionDeclaration') {
+            let blockRangeEnd = getBlockStatementList(tree, i, '}').index
+
             root.push({
                 type: 'FunctionDeclaration',
                 params: [
                     ...getFunctionParams(tree, i + 1, ')')
                 ],
                 id: {
-                    name: getNextToken(tree, i + 1)
+                    name: getNextToken(tree, i + 1).value
                 },
-                body: parse(tree.slice(i, getBlockStatementList(tree, i, '}').index))
+                body: parse(tree.slice(i + 1, blockRangeEnd))
             })
+            i = blockRangeEnd
         }
         // return statement
-        if(tree[i].type === 'return') {
-            root.push({
-                type: 'return',
-                body: []
-            })
-        }
-        // function params
-        if(tree[i].type === 'paren' && tree[i].value === '(' &&  getPreToken(list, i).type === 'FunctionDeclaration') {
+        if(tree[i].type === 'ReturnExpressionStatement') {
+            let blockRangeEnd = getBlockStatementList(tree, i, '}').index
 
+            root.push({
+                type: 'ReturnExpressionStatement',
+                body: getExpressionStatement(tree.slice(i + 1, blockRangeEnd))
+            })
+            i = blockRangeEnd
         }
     }
 
     return root
 }
-
